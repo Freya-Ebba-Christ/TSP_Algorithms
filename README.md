@@ -1,4 +1,6 @@
-# TSP_Algorithms
+![image](https://github.com/Freya-Ebba-Christ/TSP_Algorithms/assets/57752514/ee5bde71-b05f-4022-9114-361210c0fd43)
+
+TSP_Algorithms
 The Project is about implementing various types of TSP algorithms in Java and Python.
 
 Some literature:
