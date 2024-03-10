@@ -6,6 +6,7 @@ Some literature:
 https://arxiv.org/pdf/2203.02228.pdf
 <br>
 https://arxiv.org/pdf/1908.08007.pdf
+http://webhotel4.ruc.dk/~keld/research/LKH/
 
 Here we mainly focus on implementing different kinds of optimizers without using 3rd party libraries to exemplify the core ideas.
 
