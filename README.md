@@ -10,6 +10,5 @@ https://arxiv.org/pdf/1908.08007.pdf
 Here we mainly focus on implementing different kinds of optimizers without using 3rd party libraries to exemplify the core ideas.
 
 <b>Notes:</b>
-10.03.2024:
 <br>
-The latest Algorithm: TSP_GA_V9.py might be incorrect. 
+10.03.2024: The latest Algorithm: TSP_GA_V9.py might be incorrect. 
