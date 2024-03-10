@@ -11,4 +11,4 @@ Here we mainly focus on implementing different kinds of optimizers without using
 
 <b>Notes:</b>
 <br>
-10.03.2024: The latest Algorithm: TSP_GA_V9.py might be incorrect. 
+10.03.2024: Algorithm TSP_GA_V9.py might be incorrect. 
