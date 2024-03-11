@@ -9,8 +9,7 @@ https://arxiv.org/pdf/1908.08007.pdf
 <br>
 http://webhotel4.ruc.dk/~keld/research/LKH/
 <br>
-Here we mainly focus on implementing different kinds of optimizers without using 3rd party libraries to exemplify the core ideas.
+Here we mainly focus on implementing different optimizers without using 3rd party libraries to exemplify the core ideas.
 <br>
-<b>Notes:</b>
-<br>
-10.03.2024: Algorithm TSP_GA_V9.py might be incorrect. 
+The algorithms are all hybrid solutions of several different algorithms, all serving a specific purpose 
+
