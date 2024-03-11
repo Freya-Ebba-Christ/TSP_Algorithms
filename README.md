@@ -12,4 +12,8 @@ http://webhotel4.ruc.dk/~keld/research/LKH/
 Here we mainly focus on implementing different optimizers without using 3rd party libraries to exemplify the core ideas.
 <br>
 The algorithms are all hybrid solutions of several different algorithms, all serving a specific purpose 
-
+<br>
+<b>News:</b>
+<br>
+<b>TSP_GA_A_star_gpx2_LKH_op2.py</b> and <b>TSP_GA_V17_LKH.py</b> perform similar w.r.t. final distance: But my more traditional and highly optimized genetic algorithm is substantially faster than the version using gpx2
+Using A* is my own and pretty unusual idea.
