@@ -219,9 +219,17 @@ def next_generation(current_gen, elite_size, mutation_rate, crossover_rate, dist
     return next_gen
 
 def calculate_route_length(route, distance_matrix):
-   # Assuming 'route' is a list of city indices and 'distance_matrix' is a 2D NumPy array of distances
     # Convert route to a NumPy array for advanced indexing
     route_np = np.array(route)
+    
+    # Check if route_np is None or empty
+    if route_np is None or len(route_np) == 0:
+        raise ValueError("Route is empty or None.")
+    
+    # Check if distance_matrix is a 2D array
+    if len(distance_matrix.shape) != 2:
+        raise ValueError("distance_matrix must be a 2D NumPy array.")
+    
     # Use advanced indexing to select the distances between consecutive cities
     # and sum them up. Also include the return to the start for a complete cycle.
     return np.sum(distance_matrix[route_np[:-1], route_np[1:]]) + distance_matrix[route_np[-1], route_np[0]]
