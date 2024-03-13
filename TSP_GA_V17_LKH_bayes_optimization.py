@@ -28,6 +28,10 @@ import numpy as np
 import random
 import heapq
 from skopt import gp_minimize
+from skopt.space import Real, Integer
+from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
+from sklearn.ensemble import RandomForestRegressor
+from skopt.utils import cook_estimator
 
 class UnionFind:
     """A class to perform union find operations."""
@@ -245,6 +249,12 @@ def next_generation(current_gen, elite_size, mutation_rate, crossover_rate, dist
     return next_gen
 
 def calculate_route_length(route, distance_matrix):
+    # Ensure route is not None and is a list or similar iterable
+    if route is None or not hasattr(route, '__iter__') or len(route) == 0:
+        print("Route:", route)
+        print("Route type:", type(route))
+        raise ValueError("Route is empty or None.")
+        
     # Convert route to a NumPy array for advanced indexing
     route_np = np.array(route)
     
@@ -354,77 +364,110 @@ def genetic_algorithm(num_cities, pop_size, elite_size, mutation_rate, generatio
     distance_matrix = create_distance_matrix(num_cities)
     best_distance = float('inf')
     fitness_threshold = initial_threshold
-    best_route = None  # Initialize best_route
+    best_route = None
     
     print("Initial distance: " + str(calculate_route_length(pop[0], distance_matrix)))
     for gen in range(generations):
-        # Dynamic adjustment of crossover rate
         crossover_rate = initial_crossover_rate - ((initial_crossover_rate - final_crossover_rate) * gen / generations)
         pop = next_generation(pop, elite_size, mutation_rate, crossover_rate, distance_matrix)
+        print("Population size after next_generation:", len(pop))  
         for idx in range(len(pop)):
             pop[idx] = lkh_inspired_optimization(pop[idx], distance_matrix)
+            print("Route length after LKH optimization:", calculate_route_length(pop[idx], distance_matrix))  
         
         if pop:
             current_best_distance = calculate_route_length(pop[0], distance_matrix)
-            
             if current_best_distance < best_distance:
                 best_distance = current_best_distance
-            
-            # Adaptive termination criteria
             if adaptive_termination_criteria(gen, current_best_distance, best_distance):
                 break
-
-            # Adaptive fitness threshold adjustment
             fitness_threshold = adaptive_fitness_threshold(initial_threshold, gen, current_best_distance, best_distance)
-        
-            # Filter population based on fitness threshold
             pop = [route for route in pop if calculate_route_length(route, distance_matrix) <= fitness_threshold]
-            
-            if pop:
-                best_route_index = rank_routes(pop, distance_matrix)[0][0]
-                best_route = pop[best_route_index]
-                
-                # Apply A* optimization to the best route
-                best_route = a_star_optimize(best_route, distance_matrix)
-                
-                print("Final distance: " + str(calculate_route_length(best_route, distance_matrix)))
+            print("Population size after filtering:", len(pop))  
+            if not pop:
+                print("Population is empty after filtering")  
+                return None
+            best_route_index = rank_routes(pop, distance_matrix)[0][0]
+            best_route = pop[best_route_index]
+            print("Best route before A* optimization:", best_route)  # Add this line
+            best_route = a_star_optimize(best_route, distance_matrix)
+            print("Best route after A* optimization:", best_route)  
+            print("Final distance: " + str(calculate_route_length(best_route, distance_matrix)))
         else:
             print("Error: Population is empty")
-            return 99999        
-    return best_route
+            return None
+    return best_route if best_route is not None else None
+
+def decode_x(x, num_cities):
+    """
+    Decode the input vector x into a route.
+
+    Parameters:
+        x (list): Input vector representing the order of cities.
+        num_cities (int): Number of cities in the TSP problem.
+
+    Returns:
+        list: Decoded route.
+    """
+    # Assuming x contains indices of cities in the order they should be visited
+    route = list(x)
+    # Ensure the route starts and ends at city 0
+    if 0 not in route:
+        route.insert(0, 0)
+    else:
+        route.remove(0)
+    # Ensure the route includes all cities
+    while len(route) < num_cities:
+        for city in range(num_cities):
+            if city not in route:
+                route.append(city)
+    return route
 
 
-
-# Running the genetic algorithm with integrated MST and Eulerian enhancements
-num_cities = 50
-population_size = 50
-elite_size = 5
-mutation_rate = 0.01
-generations = 100
-initial_crossover_rate = 0.8
-final_crossover_rate = 0.2
-initial_fitness_threshold = 1000
-
-best_route = genetic_algorithm(num_cities, population_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_fitness_threshold)
-print(f"Best Route: {best_route}")
-
-
-# Define the objective function
 def objective_function(params):
     num_cities, pop_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_fitness_threshold = params
     best_route = genetic_algorithm(num_cities, pop_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_fitness_threshold)
-    # Negate the route distance to maximize
-    return -calculate_route_length(best_route, create_distance_matrix(num_cities))
+    
+    if best_route is not None:
+        best_route = decode_x(best_route, num_cities)  # Decodes the best route from the genetic algorithm
+        route_length = calculate_route_length(best_route, create_distance_matrix(num_cities))
+        
+        if np.isinf(route_length) or route_length > 1e6:  # Check if route length is infinite or too large
+            # Return a very large negative value
+            return -1e9
+        else:
+            # Negate the route distance to maximize
+            return -route_length
+    else:
+        # Return a very large negative value if no valid route is found
+        return -1e9
 
 # Define the search space for the tuning parameters
-space = [(10, 100),  # num_cities
-         (10, 100),  # population_size
-         (2, 10),    # elite_size
-         (0.001, 0.1),  # mutation_rate
-         (50, 200),  # generations
-         (0.2, 0.8), # initial_crossover_rate
-         (0.1, 0.5), # final_crossover_rate
-         (500, 2000)] # initial_fitness_threshold
+space = [
+    Integer(50, 51),  # num_cities
+    Integer(10, 100),  # population_size
+    Integer(2, 10),    # elite_size
+    Real(0.001, 0.1),  # mutation_rate
+    Integer(50, 200),  # generations
+    Real(0.2, 0.8),    # initial_crossover_rate
+    Real(0.1, 0.5),    # final_crossover_rate
+    Integer(500, 2000) # initial_fitness_threshold
+]
 
-# Run the Bayesian optimization
-result = gp_minimize(objective_function, space, n_calls=20)
+# Run gp_minimize with a random forest regressor as base estimator
+result = gp_minimize(
+    objective_function,
+    space,
+    n_calls=50,
+    base_estimator="RF"  # Using a random forest regressor
+)
+
+print("Best parameters found:")
+print("num_cities:", result.x[0])
+print("population_size:", result.x[1])
+print("elite_size:", result.x[2])
+print("mutation_rate:", result.x[3])
+print("generations:", result.x[4])
+print("initial_crossover_rate:", result.x[5])
+print("final_crossover_rate:", result.x[6])
+print("initial_fitness_threshold:", result.x[7])
