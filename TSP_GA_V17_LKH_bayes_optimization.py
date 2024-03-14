@@ -25,13 +25,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import numpy as np
+import pandas as pd
 import random
 import heapq
 from skopt import gp_minimize
 from skopt.space import Real, Integer
-from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
-from sklearn.ensemble import RandomForestRegressor
-from skopt.utils import cook_estimator
+import matplotlib.pyplot as plt
 
 class UnionFind:
     """A class to perform union find operations."""
@@ -398,7 +397,7 @@ def genetic_algorithm(num_cities, pop_size, elite_size, mutation_rate, generatio
             return None
     return best_route if best_route is not None else None
 
-def decode_x(x, num_cities):
+def decode_best_route(best_route, num_cities):
     """
     Decode the input vector x into a route.
 
@@ -410,7 +409,7 @@ def decode_x(x, num_cities):
         list: Decoded route.
     """
     # Assuming x contains indices of cities in the order they should be visited
-    route = list(x)
+    route = list(best_route)
     # Ensure the route starts and ends at city 0
     if 0 not in route:
         route.insert(0, 0)
@@ -423,29 +422,30 @@ def decode_x(x, num_cities):
                 route.append(city)
     return route
 
-
-def objective_function(params):
+def objective_function_with_logging(params):
+    # Unpack parameters
     num_cities, pop_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_fitness_threshold = params
+    
+    # Run the genetic algorithm with the current set of parameters
     best_route = genetic_algorithm(num_cities, pop_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_fitness_threshold)
     
+    # Check if a valid route was found
     if best_route is not None:
-        best_route = decode_x(best_route, num_cities)  # Decodes the best route from the genetic algorithm
-        route_length = calculate_route_length(best_route, create_distance_matrix(num_cities))
-        
-        if np.isinf(route_length) or route_length > 1e6:  # Check if route length is infinite or too large
-            # Return a very large negative value
-            return -1e9
-        else:
-            # Negate the route distance to maximize
-            return -route_length
+        # Decode the route
+        best_route = decode_best_route(best_route, num_cities)
+        # Calculate the actual distance of the route
+        distance_matrix = create_distance_matrix(num_cities);
+        final_dustance =  calculate_route_length(best_route, distance_matrix)
+       # Return the actual distance for optimization
+        return final_dustance
     else:
-        # Return a very large negative value if no valid route is found
-        return -1e9
+        # Use a high distance value to signify an unsuccessful optimization
+        return 1e9
 
 # Define the search space for the tuning parameters
 space = [
     Integer(50, 51),  # num_cities
-    Integer(10, 100),  # population_size
+    Integer(50, 150),  # population_size
     Integer(2, 10),    # elite_size
     Real(0.001, 0.1),  # mutation_rate
     Integer(50, 200),  # generations
@@ -456,9 +456,9 @@ space = [
 
 # Run gp_minimize with a random forest regressor as base estimator
 result = gp_minimize(
-    objective_function,
+    objective_function_with_logging,
     space,
-    n_calls=50,
+    n_calls=100,
     base_estimator="RF"  # Using a random forest regressor
 )
 
