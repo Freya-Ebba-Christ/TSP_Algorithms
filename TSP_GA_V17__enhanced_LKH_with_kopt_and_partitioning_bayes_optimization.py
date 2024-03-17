@@ -431,6 +431,34 @@ def optimize_route_segments(route, distance_matrix, num_partitions, max_k):
     return final_optimized_route
 
 
+def collect_data(num_cities, pop_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_threshold, max_k, num_partitions, final_distance, iteration):
+
+    global data_collection_list  # Ensure we're modifying the global list
+    global data_collection  # Reference the global DataFrame
+    # Existing code ...
+    for gen in range(generations):
+        # Existing loop code...
+        # Collect data after each iteration
+        iteration_data = {
+            'iteration': iteration,
+            'num_cities': num_cities,
+            'pop_size': pop_size,
+            'elite_size': elite_size,
+            'mutation_rate': mutation_rate,
+            'generation': gen,
+            'initial_crossover_rate': initial_crossover_rate,
+            'final_crossover_rate': final_crossover_rate,
+            'initial_threshold': initial_threshold,
+            'max_k': max_k,
+            'num_partitions': num_partitions,
+            'final_distance': final_distance
+        }
+        data_collection_list.append(iteration_data)
+
+# Define a DataFrame to hold the collected data
+columns = ['iteration', 'num_cities', 'pop_size', 'elite_size', 'mutation_rate', 'generations', 'initial_crossover_rate', 'final_crossover_rate', 'initial_threshold', 'max_k', 'num_partitions', 'final_distance']
+data_collection_list = []
+iteration = 0
 
 def genetic_algorithm(num_cities, pop_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_threshold, max_k, num_partitions):
     edges = [(i, j, np.random.randint(1, 100)) for i in range(num_cities) for j in range(i+1, num_cities)]
@@ -439,6 +467,7 @@ def genetic_algorithm(num_cities, pop_size, elite_size, mutation_rate, generatio
     best_distance = float('inf')
     fitness_threshold = initial_threshold
     best_route = None
+    global iteration
     
     print("Initial distance: " + str(calculate_route_length(pop[0], distance_matrix)))
     for gen in range(generations):
@@ -471,6 +500,10 @@ def genetic_algorithm(num_cities, pop_size, elite_size, mutation_rate, generatio
         else:
             print("Error: Population is empty")
             return None
+        
+        iteration = iteration+1
+        collect_data(num_cities, pop_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_threshold, max_k, num_partitions, final_distance, iteration)
+        
     return best_route if best_route is not None else None
 
 def decode_best_route(best_route, num_cities):
@@ -520,7 +553,7 @@ def objective_function_with(params):
 
 # Define the search space for the tuning parameters
 space = [
-    Integer(100, 101),  # num_cities
+    Integer(30, 31),  # num_cities
     Integer(10, 250),   # population_size
     Integer(2, 10),     # elite_size
     Real(0.001, 0.1),   # mutation_rate
@@ -536,7 +569,7 @@ space = [
 result = gp_minimize(
     objective_function_with,
     space,
-    n_calls=10,
+    n_calls=100,
     base_estimator="RF"  # Using a random forest regressor
 )
 
@@ -551,3 +584,4 @@ print("final_crossover_rate:", result.x[6])
 print("initial_fitness_threshold:", result.x[7])
 print("initial_max_k", result.x[8])
 print("initial_num_partitions:", result.x[9])
+
