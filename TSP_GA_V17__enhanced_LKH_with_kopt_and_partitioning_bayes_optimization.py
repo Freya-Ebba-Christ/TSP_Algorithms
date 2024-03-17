@@ -465,8 +465,9 @@ def genetic_algorithm(num_cities, pop_size, elite_size, mutation_rate, generatio
             best_route = pop[best_route_index]
             #print("Best route before A* optimization:", best_route)  # Add this line
             #best_route = a_star_optimize(best_route, distance_matrix)
-            #print("Best route after A* optimization:", best_route)  
-            print("Final distance: " + str(calculate_route_length(best_route, distance_matrix)))
+            #print("Best route after A* optimization:", best_route)
+            final_distance = str(calculate_route_length(best_route, distance_matrix))
+            print("Final distance: " + final_distance)
         else:
             print("Error: Population is empty")
             return None
@@ -497,7 +498,7 @@ def decode_best_route(best_route, num_cities):
                 route.append(city)
     return route
 
-def objective_function_with_logging(params):
+def objective_function_with(params):
     # Unpack parameters
     num_cities, pop_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_fitness_threshold, max_k, num_partitions = params
     
@@ -510,9 +511,9 @@ def objective_function_with_logging(params):
         best_route = decode_best_route(best_route, num_cities)
         # Calculate the actual distance of the route
         distance_matrix = create_distance_matrix(num_cities);
-        final_dustance =  calculate_route_length(best_route, distance_matrix)
-       # Return the actual distance for optimization
-        return final_dustance
+        final_distance =  calculate_route_length(best_route, distance_matrix)
+        # Return the actual distance for optimization
+        return final_distance
     else:
         # Use a high distance value to signify an unsuccessful optimization
         return 1e9
@@ -533,7 +534,7 @@ space = [
 
 # Run gp_minimize with a random forest regressor as base estimator
 result = gp_minimize(
-    objective_function_with_logging,
+    objective_function_with,
     space,
     n_calls=10,
     base_estimator="RF"  # Using a random forest regressor
