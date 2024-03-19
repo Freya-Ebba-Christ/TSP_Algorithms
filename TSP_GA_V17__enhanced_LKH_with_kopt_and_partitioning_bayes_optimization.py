@@ -31,6 +31,7 @@ import heapq
 from skopt import gp_minimize
 from skopt.space import Real, Integer
 import matplotlib.pyplot as plt
+from concurrent.futures import ProcessPoolExecutor
 
 class UnionFind:
     """A class to perform union find operations."""
@@ -142,8 +143,10 @@ def a_star_optimize(route, distance_matrix):
     return route
 
 def rank_routes(population, distance_matrix):
-    fitness_results = {i: calculate_route_length(route, distance_matrix) for i, route in enumerate(population)}
-    return sorted(fitness_results.items(), key=lambda x: x[1])
+    fitness_results = calculate_fitness_for_all(population, distance_matrix)
+    ranked_results = {i: fitness for i, fitness in enumerate(fitness_results)}
+    return sorted(ranked_results.items(), key=lambda x: x[1])
+
 
 def selection(ranked_routes, elite_size):
     if len(ranked_routes) <= elite_size:
@@ -356,9 +359,6 @@ def k_opt(route, distance_matrix, max_k):
 
 def lkh_inspired_optimization(route, distance_matrix, max_k):
     """Performs an LKH-inspired optimization on the given route using k-opt swaps."""
-    # Given the implementation of k_opt, you can directly use it here.
-    # The k_opt function already includes a loop for improvement,
-    # so it can replace the previous for-loop structure for k and swapping.
     optimized_route = k_opt(route, distance_matrix, max_k)
     return optimized_route
 
@@ -531,6 +531,13 @@ def decode_best_route(best_route, num_cities):
                 route.append(city)
     return route
 
+
+def calculate_fitness_for_all(population, distance_matrix):
+    with ProcessPoolExecutor() as executor:
+        results = executor.map(calculate_route_length, population, [distance_matrix] * len(population))
+    fitness_results = list(results)
+    return fitness_results
+
 def objective_function_with(params):
     # Unpack parameters
     num_cities, pop_size, elite_size, mutation_rate, generations, initial_crossover_rate, final_crossover_rate, initial_fitness_threshold, max_k, num_partitions = params
@@ -553,7 +560,7 @@ def objective_function_with(params):
 
 # Define the search space for the tuning parameters
 space = [
-    Integer(30, 31),  # num_cities
+    Integer(150, 151),  # num_cities
     Integer(10, 250),   # population_size
     Integer(2, 10),     # elite_size
     Real(0.001, 0.1),   # mutation_rate
